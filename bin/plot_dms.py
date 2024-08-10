@@ -22,8 +22,49 @@ def load_model(model_name):
 
     return data
 
+"""
+def calculate_win_rates(df):
+    # Uses iindividual not avearge 
+    # Group by protein and find the model with the highest correlation for each
+    winners = df.loc[df.groupby('protein')['corr'].idxmax()]
+    total_proteins = len(winners)
+
+    # Calculate overall win rates
+    overall_win_rates = winners['model_name'].value_counts() / total_proteins
+
+    # Calculate head-to-head win rate for ESM2 vs ESM1b
+    head_to_head = df[df['model_name'].isin(['esm2', 'esm1b'])].copy()
+    head_to_head['rank'] = head_to_head.groupby('protein')['corr'].rank(ascending=False, method='min')
+    esm2_wins = (head_to_head[head_to_head['model_name'] == 'esm2']['rank'] == 1).sum()
+    total_comparisons = len(head_to_head['protein'].unique())
+    esm2_win_rate = esm2_wins / total_comparisons
+
+    return overall_win_rates, esm2_win_rate
+"""
+
+def calculate_win_rates(df):
+    # Calculate average correlation for each protein and model
+    avg_corr = df.groupby(['protein', 'model_name'])['corr'].mean().reset_index()
+    
+    # Find the winner for each protein
+    winners = avg_corr.loc[avg_corr.groupby('protein')['corr'].idxmax()]
+    total_proteins = len(winners['protein'].unique())
+
+    # Calculate overall win rates
+    overall_win_rates = winners['model_name'].value_counts() / total_proteins
+
+    # Calculate head-to-head win rate for ESM2 vs ESM1b
+    head_to_head = avg_corr[avg_corr['model_name'].isin(['esm2', 'esm1b'])].copy()
+    head_to_head['rank'] = head_to_head.groupby('protein')['corr'].rank(ascending=False, method='min')
+    esm2_wins = (head_to_head[head_to_head['model_name'] == 'esm2']['rank'] == 1).sum()
+    total_comparisons = len(head_to_head['protein'].unique())
+    esm2_win_rate = esm2_wins / total_comparisons
+
+    return overall_win_rates, esm2_win_rate
+        
 if __name__ == '__main__':
     data = []
+    data += load_model('esm2')
     data += load_model('esm1b')
     data += load_model('tape')
 
@@ -35,25 +76,73 @@ if __name__ == '__main__':
         'pval',
     ])
 
+    # Calculate win rates
+    overall_win_rates, esm2_vs_esm1b_win_rate = calculate_win_rates(df)
+
+    # Print win rates
+    print("Overall Win Rates:")
+    print(overall_win_rates)
+    print(f"\nESM2 vs ESM1b Win Rate: {esm2_vs_esm1b_win_rate:.2f}")
+
+    # Define the color scheme and order
+    color_dict = {
+        'esm2': '#2ca02c',    # Green
+        'esm1b': '#1f77b4',   # Dark Blue
+        'DeepSequence': '#ff7f0e',  # Orange
+        'tape': '#9ecae1'     # Light Blue
+    }
+    model_order = ['esm2', 'esm1b', 'DeepSequence', 'tape']
+
+    # Set the style for seaborn
+    sns.set_style("whitegrid")
+
+    # Ensure the DataFrame has 'model_name' as a categorical type with the desired order
+    df['model_name'] = pd.Categorical(df['model_name'], categories=model_order, ordered=True)
+
     plt.figure(figsize=(12, 5))
-    sns.barplot(
+
+    # Create the bar plot
+    ax = sns.barplot(
         data=df,
         x='protein',
         y='corr',
         hue='model_name',
+        hue_order=model_order,
+        palette=color_dict,
         ci=None,
     )
+
+    # Add the strip plot
     sns.stripplot(
         data=df,
         x='protein',
         y='corr',
         hue='model_name',
+        hue_order=model_order,
+        palette=color_dict,
         dodge=True,
+        jitter=True,
+        size=4,
+        edgecolor='black',
+        linewidth=0.5,
     )
+
+    # Customize the plot
     plt.xticks(rotation=45, ha='right')
     plt.ylabel('|Spearman r|')
+    plt.xlabel('Protein')
+    plt.title('DMS Plot', fontsize=16)
+
+    # Remove top and right spines
+    sns.despine()
+
+    # Adjust legend
+    handles, labels = ax.get_legend_handles_labels()
+    ax.legend(handles[:4], labels[:4], title='Model Name', bbox_to_anchor=(1.05, 1), loc='upper left')
+
+    # Adjust layout and save
     plt.tight_layout()
-    plt.savefig('figures/plot_dms.svg')
+    plt.savefig('figures/plot_dms.svg', bbox_inches='tight')
     plt.close()
 
     print(df.to_csv())

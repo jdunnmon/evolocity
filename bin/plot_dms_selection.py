@@ -24,6 +24,7 @@ def load_model(model_name):
 
 if __name__ == '__main__':
     data = []
+    data += load_model('esm2')
     data += load_model('esm1b')
     data += load_model('tape')
 

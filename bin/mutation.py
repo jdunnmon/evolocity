@@ -29,6 +29,12 @@ def get_model(args, seq_len, vocab_size,
         model = TAPEModel(
             'bert-base',
         )
+    elif args.model_name == 'esm2':
+        from fb_model import FBModel
+        model = FBModel(
+            'esm2_t33_650M_UR50D',
+            repr_layer=[-1],
+        )
     else:
         err_model(args.model_name)
 

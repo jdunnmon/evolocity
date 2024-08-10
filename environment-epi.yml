@@ -1,4 +1,4 @@
-name: epi
+name: epi-cuda
 channels:
   - bioconda
   - defaults
@@ -179,4 +179,4 @@ dependencies:
     - wrapt==1.12.1
     - zc-lockfile==2.0
     - zipp==3.4.0
-prefix: /data/cb/brianhie/anaconda3/envs/epi
+prefix: /data/cb/brianhie/anaconda3/envs/epi-cuda
