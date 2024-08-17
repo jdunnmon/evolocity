@@ -112,4 +112,7 @@ if __name__ == '__main__':
     ]
 
     for fname in fnames:
-        dms_results(fname, args, model, vocabulary)
+        try:
+            dms_results(fname, args, model, vocabulary)
+        except:
+            print(f'Failed to complete {fname}, continuing...')

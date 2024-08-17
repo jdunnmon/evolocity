@@ -11,6 +11,12 @@ def get_model(args, seq_len, vocab_size,
             'esm1b_t33_650M_UR50S',
             repr_layer=[-1],
         )
+    elif args.model_name == 'esm1-670D':
+        from fb_model import FBModel
+        model = FBModel(
+            'esm1_t34_670M_UR50D',
+            repr_layer=[-1],
+        )
     elif args.model_name.startswith('esm1v'):
         from fb_model import FBModel
         model = FBModel(
@@ -33,6 +39,12 @@ def get_model(args, seq_len, vocab_size,
         from fb_model import FBModel
         model = FBModel(
             'esm2_t33_650M_UR50D',
+            repr_layer=[-1],
+        )
+    elif args.model_name == 'esm2-3B':
+        from fb_model import FBModel
+        model = FBModel(
+            'esm2_t36_3B_UR50D',
             repr_layer=[-1],
         )
     else:
