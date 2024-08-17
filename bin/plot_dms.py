@@ -12,13 +12,16 @@ def load_model(model_name):
 
             if line.startswith('\tDMS'):
                 line = line.rstrip(':').strip()
-                dms_name, model_name = line.split('-')
+                # Split on the first dash after "DMS_"
+                dms_part, model_part = line.split('-', 1)
+                dms_name = dms_part.strip()
+                model_name = model_part.strip()
                 continue
 
             if line.startswith('\t\tSpearman r = '):
                 corr = abs(float(line.split(',')[0].split()[-1]))
                 p = float(line.split()[-1])
-                data.append([ curr_prot, dms_name, model_name, corr, p ])
+                data.append([curr_prot, dms_name, model_name, corr, p])
 
     return data
 
@@ -64,9 +67,12 @@ def calculate_win_rates(df):
         
 if __name__ == '__main__':
     data = []
+    data += load_model('esm2-3B')  # New model
     data += load_model('esm2')
     data += load_model('esm1b')
+    data += load_model('esm1-670D')  # New model
     data += load_model('tape')
+    
 
     df = pd.DataFrame(data, columns=[
         'protein',
@@ -75,6 +81,16 @@ if __name__ == '__main__':
         'corr',
         'pval',
     ])
+
+    # Remove duplicates based on 'protein', 'dms', and 'model_name'
+    df_deduped = df.drop_duplicates(subset=['protein', 'dms', 'model_name']).reset_index()
+
+    # Print information about removed duplicates
+    num_duplicates = len(df) - len(df_deduped)
+    print(f"Removed {num_duplicates} duplicate entries")
+
+    # Use the deduplicated DataFrame for further processing
+    df = df_deduped
 
     # Calculate win rates
     overall_win_rates, esm2_vs_esm1b_win_rate = calculate_win_rates(df)
@@ -86,12 +102,14 @@ if __name__ == '__main__':
 
     # Define the color scheme and order
     color_dict = {
-        'esm2': '#2ca02c',    # Green
-        'esm1b': '#1f77b4',   # Dark Blue
+        'esm2-3B': '#ff0000',    # Red
+        'esm2': '#2ca02c',        # Green
+        'esm1b': '#1f77b4',       # Dark Blue
         'DeepSequence': '#ff7f0e',  # Orange
-        'tape': '#9ecae1'     # Light Blue
+        'tape': '#9ecae1',        # Light Blue
+        'esm1-670D': '#808080'    # Gray
     }
-    model_order = ['esm2', 'esm1b', 'DeepSequence', 'tape']
+    model_order = ['esm2-3B', 'esm2', 'esm1b', 'DeepSequence', 'esm1-670D', 'tape']
 
     # Set the style for seaborn
     sns.set_style("whitegrid")
@@ -99,7 +117,7 @@ if __name__ == '__main__':
     # Ensure the DataFrame has 'model_name' as a categorical type with the desired order
     df['model_name'] = pd.Categorical(df['model_name'], categories=model_order, ordered=True)
 
-    plt.figure(figsize=(12, 5))
+    plt.figure(figsize=(14, 5))  # Increased figure width to accommodate new models
 
     # Create the bar plot
     ax = sns.barplot(
@@ -138,7 +156,7 @@ if __name__ == '__main__':
 
     # Adjust legend
     handles, labels = ax.get_legend_handles_labels()
-    ax.legend(handles[:4], labels[:4], title='Model Name', bbox_to_anchor=(1.05, 1), loc='upper left')
+    ax.legend(handles[:6], labels[:6], title='Model Name', bbox_to_anchor=(1.05, 1), loc='upper left')
 
     # Adjust layout and save
     plt.tight_layout()
